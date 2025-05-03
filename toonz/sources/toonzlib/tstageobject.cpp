@@ -1031,10 +1031,6 @@ void TStageObject::removeKeyframeWithoutUndo(int frame) {
 }
 
 //-----------------------------------------------------------------------------
-void TStageObject::setKeyframeChangedCallback(TParamP param) {
-  
-}
-    //-----------------------------------------------------------------------------
 
 bool TStageObject::moveKeyframe(int dst, int src) {
   assert(dst != src);

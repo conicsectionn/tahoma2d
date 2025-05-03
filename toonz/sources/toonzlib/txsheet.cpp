@@ -41,7 +41,7 @@
 
 // STD includes
 #include <set>
-
+#include <QDebug>
 using namespace std;
 
 DEFINE_CLASS_CODE(TXsheet, 18)
@@ -544,8 +544,9 @@ int TXsheet::getMaxFrame(int col) const {
 }
 
 //-----------------------------------------------------------------------------
-void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0, int frameEnd = INT_MAX) {
-  TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
+void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0,
+                                              int frameEnd) {
+  TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col));
   TParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
 
   int prevKeyFrameIndex = drawingNumberParamP->getPrevKeyframe(frame);
@@ -611,6 +612,7 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0, int frameE
     */
   }
 }
+
 //-----------------------------------------------------------------------------
 
 bool TXsheet::isColumnEmpty(int col) const {
