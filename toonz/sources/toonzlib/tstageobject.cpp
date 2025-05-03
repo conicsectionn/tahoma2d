@@ -41,6 +41,7 @@ using namespace std;
 // il problema si verifica ruotando gli oggetti sul camera stand
 //
 
+
 #ifdef _MSC_VER
 #pragma optimize("", off)
 #endif
@@ -272,7 +273,8 @@ bool setKeyframe(const TDoubleParamP &param, const TDoubleKeyframe &kf,
 void setkey(const TDoubleParamP &param, int frame) {
   KeyframeSetter setter(param.getPointer(), -1, false);
   setter.createKeyframe(frame);
-}
+
+ }
 
 //-----------------------------------------------------------------------------
 
@@ -373,6 +375,7 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
     , m_posPath(new TDoubleParam())
     , m_shearx(new TDoubleParam())
     , m_sheary(new TDoubleParam())
+    , m_drawingnumber(new TDoubleParam())
     , m_center()
     , m_frameCenter()
     , m_offset()
@@ -385,7 +388,8 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
     , m_noScaleZ(0)
     , m_pinnedRangeSet(0)
     , m_ikflag(0)
-    , m_groupSelector(-1) {
+    , m_groupSelector(-1)
+    {
   // NOTA: per le unita' di misura controlla anche tooloptions.cpp
   m_x->setName("W_X");
   m_x->setMeasureName("length.x");
@@ -425,10 +429,14 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
   m_sheary->setName("W_ShearV");
   m_sheary->setMeasureName("shear");
   m_sheary->addObserver(this);
-
+  
   m_posPath->setName("posPath");
   m_posPath->setMeasureName("percentage2");
   m_posPath->addObserver(this);
+
+  m_drawingnumber->setName("W_Drawing_Number");
+  m_drawingnumber->setMeasureName("dummy"); 
+  m_drawingnumber->addObserver(this);
 
   m_tree->setGrammar(m_x);
   m_tree->setGrammar(m_y);
@@ -441,13 +449,15 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
   m_tree->setGrammar(m_shearx);
   m_tree->setGrammar(m_sheary);
   m_tree->setGrammar(m_posPath);
+  m_tree->setGrammar(m_drawingnumber); 
+ 
 
   if (id.isCamera()) m_camera = new TCamera();
 
   m_pinnedRangeSet = new TPinnedRangeSet();
 }
 
-//-----------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------
 
 TStageObject::~TStageObject() {
   if (m_spline) {
@@ -466,6 +476,7 @@ TStageObject::~TStageObject() {
   if (m_shearx) m_shearx->removeObserver(this);
   if (m_sheary) m_sheary->removeObserver(this);
   if (m_posPath) m_posPath->removeObserver(this);
+  if (m_drawingnumber) m_drawingnumber->removeObserver(this);
 
   if (m_skeletonDeformation) {
     PlasticDeformerStorage::instance()->releaseDeformationData(
@@ -840,7 +851,7 @@ bool TStageObject::isFullKeyframe(int frame) const {
          m_so->isKeyframe(frame) && m_posPath->isKeyframe(frame) &&
          m_scalex->isKeyframe(frame) && m_scaley->isKeyframe(frame) &&
          m_scale->isKeyframe(frame) && m_shearx->isKeyframe(frame) &&
-         m_sheary->isKeyframe(frame);
+         m_sheary->isKeyframe(frame) && m_drawingnumber->isKeyframe(frame);
 }
 
 //-----------------------------------------------------------------------------
@@ -863,6 +874,7 @@ TStageObject::Keyframe TStageObject::getKeyframe(int frame) const {
     k.m_channels[TStageObject::T_Path]   = m_posPath->getValue(frame);
     k.m_channels[TStageObject::T_ShearX] = m_shearx->getValue(frame);
     k.m_channels[TStageObject::T_ShearY] = m_sheary->getValue(frame);
+    k.m_channels[TStageObject::T_DrawingNumber] = m_drawingnumber->isKeyframe(frame); 
 
     if (m_skeletonDeformation)
       m_skeletonDeformation->getKeyframeAt(frame, k.m_skeletonKeyframe);
@@ -874,45 +886,71 @@ TStageObject::Keyframe TStageObject::getKeyframe(int frame) const {
 }
 
 //-----------------------------------------------------------------------------
+bool TStageObject::setKeyframe(const TDoubleParamP &param,
+                               const TDoubleKeyframe &kf, int frame,
+                               const double &easeIn, const double &easeOut) {
+  bool output = ::setKeyframe(param, kf, frame, easeIn, easeOut); 
+
+  if (param == m_drawingnumber) {
+    //int previousKeyFrame = m_drawingnumber->getNextKeyframe(); 
+    //keyFrameChangeRangeQueue.enqueue(TStageObject::KeyFrameMarker(frame, 1)); 
+  }
+  return output; 
+}
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void TStageObject::setkey(const TDoubleParamP &param, int frame) { 
+  ::setkey(param, frame);
+
+}
+//-----------------------------------------------------------------------------
+
+TStageObject::KeyFrameMarker* TStageObject::tryDequeueKeyFrameChangeRangeQueue() {
+  if (keyFrameChangeRangeQueue.isEmpty()) return nullptr;
+  return &keyFrameChangeRangeQueue.dequeue();
+}
 
 void TStageObject::setKeyframeWithoutUndo(int frame,
                                           const TStageObject::Keyframe &k) {
   KeyframeMap &keyframes = lazyData().m_keyframes;
 
   bool keyWasSet = false;
-  keyWasSet = ::setKeyframe(m_rot, k.m_channels[TStageObject::T_Angle], frame,
+  keyWasSet = setKeyframe(m_rot, k.m_channels[TStageObject::T_Angle], frame,
                             k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_x, k.m_channels[TStageObject::T_X], frame,
+  keyWasSet = setKeyframe(m_x, k.m_channels[TStageObject::T_X], frame,
                             k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_y, k.m_channels[TStageObject::T_Y], frame,
+  keyWasSet = setKeyframe(m_y, k.m_channels[TStageObject::T_Y], frame,
                             k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_z, k.m_channels[TStageObject::T_Z], frame,
+  keyWasSet = setKeyframe(m_z, k.m_channels[TStageObject::T_Z], frame,
                             k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_so, k.m_channels[TStageObject::T_SO], frame,
+  keyWasSet = setKeyframe(m_so, k.m_channels[TStageObject::T_SO], frame,
                             k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_posPath, k.m_channels[TStageObject::T_Path],
+  keyWasSet = setKeyframe(m_posPath, k.m_channels[TStageObject::T_Path],
                             frame, k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_scalex, k.m_channels[TStageObject::T_ScaleX],
+  keyWasSet = setKeyframe(m_scalex, k.m_channels[TStageObject::T_ScaleX],
                             frame, k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_scaley, k.m_channels[TStageObject::T_ScaleY],
+  keyWasSet = setKeyframe(m_scaley, k.m_channels[TStageObject::T_ScaleY],
                             frame, k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_scale, k.m_channels[TStageObject::T_Scale], frame,
+  keyWasSet = setKeyframe(m_scale, k.m_channels[TStageObject::T_Scale], frame,
                             k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_shearx, k.m_channels[TStageObject::T_ShearX],
+  keyWasSet = setKeyframe(m_shearx, k.m_channels[TStageObject::T_ShearX],
                             frame, k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
-  keyWasSet = ::setKeyframe(m_sheary, k.m_channels[TStageObject::T_ShearY],
+  keyWasSet = setKeyframe(m_sheary, k.m_channels[TStageObject::T_ShearY],
                             frame, k.m_easeIn, k.m_easeOut) ||
               keyWasSet;
+  keyWasSet = setKeyframe(m_drawingnumber, k.m_channels[TStageObject::T_DrawingNumber],
+                            frame, k.m_easeIn, k.m_easeOut) ||
+              keyWasSet; 
 
   if (m_skeletonDeformation)
     keyWasSet = m_skeletonDeformation->setKeyframe(k.m_skeletonKeyframe, frame,
@@ -940,6 +978,7 @@ void TStageObject::setKeyframeWithoutUndo(int frame) {
   setkey(m_scale, frame);
   setkey(m_shearx, frame);
   setkey(m_sheary, frame);
+  setkey(m_drawingnumber, frame);
 
   // Plastic keys are currently not *created* by xsheet commands.
 
@@ -981,6 +1020,7 @@ void TStageObject::removeKeyframeWithoutUndo(int frame) {
   m_posPath->deleteKeyframe(frame);
   m_shearx->deleteKeyframe(frame);
   m_sheary->deleteKeyframe(frame);
+  m_drawingnumber->deleteKeyframe(frame);
 
   if (m_skeletonDeformation) m_skeletonDeformation->deleteKeyframe(frame);
 
@@ -991,6 +1031,10 @@ void TStageObject::removeKeyframeWithoutUndo(int frame) {
 }
 
 //-----------------------------------------------------------------------------
+void TStageObject::setKeyframeChangedCallback(TParamP param) {
+  
+}
+    //-----------------------------------------------------------------------------
 
 bool TStageObject::moveKeyframe(int dst, int src) {
   assert(dst != src);
@@ -1114,6 +1158,8 @@ double TStageObject::getParam(Channel type, double frame) const {
     return m_shearx->getValue(frame);
   case T_ShearY:
     return m_sheary->getValue(frame);
+  case T_DrawingNumber:
+    return m_drawingnumber->getValue(frame); 
 
   default:
     assert(false);
@@ -1146,7 +1192,9 @@ TDoubleParam *TStageObject::getParam(Channel channel) const {
   case T_ShearX:
     return m_shearx.getPointer();
   case T_ShearY:
-    return m_sheary.getPointer();
+    return m_sheary.getPointer();   
+  case T_DrawingNumber:
+    return m_drawingnumber.getPointer(); 
   default:
     return 0;
   }
@@ -1245,6 +1293,7 @@ TStageObject *TStageObject::clone() {
   cloned->m_posPath = static_cast<TDoubleParam *>(m_posPath->clone());
   cloned->m_shearx  = static_cast<TDoubleParam *>(m_shearx->clone());
   cloned->m_sheary  = static_cast<TDoubleParam *>(m_sheary->clone());
+  cloned->m_drawingnumber  = static_cast<TDoubleParam *>(m_drawingnumber->clone());
 
   if (m_skeletonDeformation)
     cloned->m_skeletonDeformation =
@@ -1453,6 +1502,14 @@ double TStageObject::getSO(double t) {
   else
     return m_so->getValue(tt);
 }
+// 
+double TStageObject::getDrawingNumber(double t) {
+  double tt = paramsTime(t);
+  if (m_parent)
+    return m_parent->getDrawingNumber(t) + m_drawingnumber->getValue(tt);
+  else
+    return m_drawingnumber->getValue(tt);
+}
 
 //-----------------------------------------------------------------------------
 
@@ -1521,6 +1578,7 @@ void TStageObject::updateKeyframes(LazyData &ld) const {
   params.push_back(m_scale.getPointer());
   params.push_back(m_shearx.getPointer());
   params.push_back(m_sheary.getPointer());
+  params.push_back(m_drawingnumber.getPointer());
 
   if (m_skeletonDeformation) {
     params.push_back(m_skeletonDeformation->skeletonIdsParam().getPointer());
@@ -1570,6 +1628,7 @@ void TStageObject::updateKeyframes(LazyData &ld) const {
     stageKf.m_channels[TStageObject::T_Path]   = m_posPath->getKeyframeAt(f);
     stageKf.m_channels[TStageObject::T_ShearX] = m_shearx->getKeyframeAt(f);
     stageKf.m_channels[TStageObject::T_ShearY] = m_sheary->getKeyframeAt(f);
+    stageKf.m_channels[TStageObject::T_DrawingNumber] = m_drawingnumber->getKeyframeAt(f);
 
     if (m_skeletonDeformation)
       m_skeletonDeformation->getKeyframeAt(f, stageKf.m_skeletonKeyframe);
@@ -1656,6 +1715,7 @@ void TStageObject::saveData(TOStream &os) {
   if (!m_posPath->isDefault()) os.child("pos") << *m_posPath;
   if (!m_shearx->isDefault()) os.child("shx") << *m_shearx;
   if (!m_sheary->isDefault()) os.child("shy") << *m_sheary;
+  if (!m_drawingnumber->isDefault()) os.child("drawingnumber") << *m_drawingnumber;
   if (m_cycleEnabled) os.child("cycle") << 1;
 
   if (m_skeletonDeformation) os.child("plasticSD") << *m_skeletonDeformation;
@@ -1734,6 +1794,8 @@ void TStageObject::loadData(TIStream &is) {
       is >> *m_shearx;
     else if (tagName == "shy")
       is >> *m_sheary;
+    else if (tagName == "drawingnumber")
+      is >> *m_drawingnumber; 
     else if (tagName == "pos")
       is >> *m_posPath;
     else if (tagName == "posCP") {
@@ -1867,7 +1929,7 @@ TStageObjectParams *TStageObject::getParams() const {
   data->m_posPath = m_posPath;
   data->m_shearx  = m_shearx;
   data->m_sheary  = m_sheary;
-
+  data->m_drawingnumber = m_drawingnumber;
   data->m_skeletonDeformation = m_skeletonDeformation;
 
   data->m_cycleEnabled = m_cycleEnabled;
@@ -1906,6 +1968,7 @@ void TStageObject::assignParams(const TStageObjectParams *src,
     m_posPath->copy(src->m_posPath.getPointer());
     m_shearx->copy(src->m_shearx.getPointer());
     m_sheary->copy(src->m_sheary.getPointer());
+    m_drawingnumber->copy(src->m_drawingnumber.getPointer());
 
     if (src->m_skeletonDeformation)
       setPlasticSkeletonDeformation(
@@ -1933,6 +1996,8 @@ void TStageObject::assignParams(const TStageObjectParams *src,
     m_shearx->addObserver(this);
     m_sheary = src->m_sheary.getPointer();
     m_sheary->addObserver(this);
+    m_drawingnumber = src->m_drawingnumber.getPointer();
+    m_drawingnumber->addObserver(this);
 
     m_skeletonDeformation = src->m_skeletonDeformation;
     if (m_skeletonDeformation) m_skeletonDeformation->addObserver(this);

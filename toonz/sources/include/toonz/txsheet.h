@@ -275,6 +275,8 @@ public:
           \sa getFrameCount()
   */
   int getMaxFrame(int col) const;
+
+  void updateNonZeroDrawingNumberCells(int col, int frame, int frameEnd);
   /*! Returns true if xsheet column identified by \b \e col is empty, it calls
           \b TXshColumn::isEmpty(), otherwise returns false.
   */

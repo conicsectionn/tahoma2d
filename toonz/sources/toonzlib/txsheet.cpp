@@ -544,6 +544,74 @@ int TXsheet::getMaxFrame(int col) const {
 }
 
 //-----------------------------------------------------------------------------
+void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0, int frameEnd = INT_MAX) {
+  TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
+  TParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
+
+  int prevKeyFrameIndex = drawingNumberParamP->getPrevKeyframe(frame);
+  int nextKeyFrameIndex = drawingNumberParamP->getNextKeyframe(frame);
+  int prevKeyFrame =
+      prevKeyFrameIndex == -1
+          ? -1
+          : drawingNumberParamP->keyframeIndexToFrame(prevKeyFrameIndex);
+  int nextKeyFrame =
+      nextKeyFrameIndex == -1
+          ? -1
+          : drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
+  qDebug() << prevKeyFrame << " next " << nextKeyFrame << "\n";
+  int maxFrame = getMaxFrame(col);
+
+  int row = prevKeyFrame;
+  row     = row == -1 ? 0 : row;
+
+  frameEnd = std::min(frameEnd, maxFrame);
+  frameEnd = nextKeyFrame == -1 ? frameEnd : std::max(frameEnd, nextKeyFrame);
+
+  qDebug() << row << " to " << frameEnd << "\n";
+  const TXshCell &constbehindcell = getCell(row - 1, col, true);
+  TXshCell behindcell             = constbehindcell;
+
+  for (int r = row; r <= frameEnd; r++) {
+    double drawingNumberDouble = pegbar->getDrawingNumber(r);
+    int drawingNumber          = drawingNumberDouble;
+    const TXshCell &constcell  = getCell(r, col);
+    TXshCell cell              = constcell;
+
+    int cellNumber = cell.getFrameId().getNumber();
+    const TXshCell *output;
+
+    if (drawingNumber > 0) {
+      if (cellNumber == drawingNumber && !behindcell.isEmpty() &&
+          behindcell.getFrameId().getNumber() == drawingNumber) {
+        TXshCell newCell = TXshCell(0, 0);
+        setCell(r, col, newCell);
+        cell = newCell;
+      } else {
+        TXshCell newCell = TXshCell(cell.m_level, drawingNumber);
+        setCell(r, col, newCell);
+        cell       = newCell;
+        behindcell = cell;
+      }
+    }
+    if (!cell.isEmpty()) {
+      behindcell = cell;
+    }
+    /*
+    if (drawingNumber > 0 && cellNumber != drawingNumber) {
+
+      if (behindcell.getFrameId().getNumber() != drawingNumber) {
+        xsh->setCell(r, col, TXshCell(cell.m_level, drawingNumber));
+        previousCell = &cell;
+      } else if (!cell.isEmpty()) {
+
+      }
+    } else if (!cell.isEmpty()) {
+      previousCell = &cell;
+    }
+    */
+  }
+}
+//-----------------------------------------------------------------------------
 
 bool TXsheet::isColumnEmpty(int col) const {
   TXshColumnP column = m_imp->m_columnSet.getColumn(col);

@@ -1814,6 +1814,8 @@ QColor FunctionPanel::getChannelColor(QString name, bool active) {
     color = QColor("darkorange");
   else if (name == "Shear V")
     color = QColor("darkorange");
+  else if (name == "Drawing Number")
+    color = QColor("lightgreen"); 
   else if (name == "posPath")
     color = QColor("darksalmon");
   else

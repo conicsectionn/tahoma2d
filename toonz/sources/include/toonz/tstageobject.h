@@ -14,12 +14,15 @@
 
 // TnzLib includes
 #include "tstageobjectid.h"
+#include "toonz/txshcell.h"
+#include "toonz/txsheet.h"
 
 // tcg includes
 #include "tcg/tcg_controlled_access.h"
 
 // Qt includes
 #include <QStack>
+#include <QQueue>
 
 #undef DVAPI
 #undef DVVAR
@@ -131,7 +134,8 @@ The default value is XY.
              //! of the spline
     T_ShearX,  //!< Shear along x-axis
     T_ShearY,  //!< Shear along y-axis
-    T_ChannelCount
+    T_DrawingNumber,
+    T_ChannelCount,
   };
 
   /*!
@@ -331,6 +335,11 @@ with the frame.
 */
   Keyframe getKeyframe(int frame) const;
 
+  bool setKeyframe(const TDoubleParamP &param, const TDoubleKeyframe &kf, int frame, 
+    const double &easeIn, const double &easeOut);
+
+  void setkey(const TDoubleParamP &param, int frame);
+
   void setKeyframeWithoutUndo(int frame, const Keyframe &);
   void setKeyframeWithoutUndo(int frame);
   void removeKeyframeWithoutUndo(int frame);
@@ -371,6 +380,11 @@ Returns the object's depth at specified frame.
 
   //!	Returns the object's stacking order at specified frame.
   double getSO(double frame);
+
+  //!	Returns the object's drawing number at specified frame.
+  double getDrawingNumber(double frame);
+
+  TParamP getDrawingNumberParamP() { return m_drawingnumber;  }
 
   //! Returns the absolute depth with no scale factor.
   double getGlobalNoScaleZ() const;
@@ -500,6 +514,13 @@ the table, camera is in the table for cameraZ = -1000.
   double paramsTime(
       double t) const;  //!< Traduces the xsheet-time into the one suitable
   //!< for param values extraction (dealing with repeat/cycling)
+  struct KeyFrameMarker {
+    int start;
+    int end;
+    KeyFrameMarker(int aStart, int aEnd) : start(aStart), end(aEnd) {}
+  };
+
+  KeyFrameMarker* tryDequeueKeyFrameChangeRangeQueue(); 
 
 private:
   // Lazily updated data
@@ -512,6 +533,11 @@ private:
   };
 
 private:
+  
+  // Key frame range queue is a queue only for updates involving drawing numbers. It is not used for any other types of
+  // of keyframes . 
+  QQueue<KeyFrameMarker> keyFrameChangeRangeQueue;
+  
   tcg::invalidable<LazyData> m_lazyData;
 
   TStageObjectId m_id;
@@ -528,7 +554,7 @@ private:
   Status m_status;
 
   TDoubleParamP m_x, m_y, m_z, m_so, m_rot, m_scalex, m_scaley, m_scale,
-      m_posPath, m_shearx, m_sheary;
+      m_posPath, m_shearx, m_sheary, m_drawingnumber; 
 
   PlasticSkeletonDeformationP
       m_skeletonDeformation;  //!< Deformation curves for a plastic skeleton
@@ -612,7 +638,7 @@ public:
   std::string m_handle, m_parentHandle;
   TPinnedRangeSet *m_pinnedRangeSet;
   TDoubleParamP m_x, m_y, m_z, m_so, m_rot, m_scalex, m_scaley, m_scale,
-      m_posPath, m_shearx, m_sheary;
+      m_posPath, m_shearx, m_sheary, m_drawingnumber;
   PlasticSkeletonDeformationP
       m_skeletonDeformation;  //!< Deformation curves for a plastic skeleton
   double m_noScaleZ;

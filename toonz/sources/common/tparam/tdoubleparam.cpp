@@ -20,11 +20,13 @@
 
 #include "tdoubleparam.h"
 
+#include "QDebug"; 
+
 using namespace std;
 
 //===============================
 
-class TActualDoubleKeyframe final : public TDoubleKeyframe {
+class TActualDoubleKeyframe : public TDoubleKeyframe {
 public:
   mutable TExpression m_expression;
   mutable TDoubleParamFileData m_fileData;
