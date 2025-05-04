@@ -39,9 +39,13 @@
 #include "toonz/txsheet.h"
 #include "toonz/preferences.h"
 
+
+
 // STD includes
 #include <set>
 #include <QDebug>
+#include "../toonz/columnselection.h"
+#include "../toonz/tapp.h"
 using namespace std;
 
 DEFINE_CLASS_CODE(TXsheet, 18)
@@ -546,20 +550,41 @@ int TXsheet::getMaxFrame(int col) const {
 //-----------------------------------------------------------------------------
 void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0,
                                               int frameEnd) {
+  int max_distance = 50; 
+  int original_frame = frame; 
   TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col));
   TParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
 
-  int prevKeyFrameIndex = drawingNumberParamP->getPrevKeyframe(frame);
+  TXshColumn* column = getColumn(col); 
+  //TColumnSelection *colSel = TApp::instance()->getCurrentSelection()->getColumnSelection();
+  if (column->isLocked() || column->isParentFolderLocked()) return; 
+  
+  if (!drawingNumberParamP->hasKeyframes()) return; 
+  
   int nextKeyFrameIndex = drawingNumberParamP->getNextKeyframe(frame);
-  int prevKeyFrame =
-      prevKeyFrameIndex == -1
-          ? -1
-          : drawingNumberParamP->keyframeIndexToFrame(prevKeyFrameIndex);
   int nextKeyFrame =
       nextKeyFrameIndex == -1
           ? -1
           : drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
-  qDebug() << prevKeyFrame << " next " << nextKeyFrame << "\n";
+
+  if (nextKeyFrameIndex == -1) {
+    frame = drawingNumberParamP->getPrevKeyframe(frame) + 1; 
+    nextKeyFrameIndex = drawingNumberParamP->getNextKeyframe(frame);
+    nextKeyFrame =
+        nextKeyFrameIndex == -1
+            ? -1
+            : drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
+  }
+
+  int prevKeyFrameIndex = drawingNumberParamP->getPrevKeyframe(frame);
+  int prevKeyFrame =
+      prevKeyFrameIndex == -1
+          ? -1
+          : drawingNumberParamP->keyframeIndexToFrame(prevKeyFrameIndex);
+  
+
+
+  //qDebug() << prevKeyFrame << " next " << nextKeyFrame << "\n";
   int maxFrame = getMaxFrame(col);
 
   int row = prevKeyFrame;
@@ -568,10 +593,17 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0,
   frameEnd = std::min(frameEnd, maxFrame);
   frameEnd = nextKeyFrame == -1 ? frameEnd : std::max(frameEnd, nextKeyFrame);
 
-  qDebug() << row << " to " << frameEnd << "\n";
+
+  //qDebug() << row << " to " << frameEnd << "\n";
   const TXshCell &constbehindcell = getCell(row - 1, col, true);
   TXshCell behindcell             = constbehindcell;
 
+  
+  frameEnd = std ::min(frameEnd, original_frame + max_distance);
+  row      = std ::max(row, std::max(original_frame - max_distance, 0)); 
+  
+  qDebug() << row << " to " << frameEnd << "\n";
+  TXshCell zeroCell = TXshCell(0, 0);
   for (int r = row; r <= frameEnd; r++) {
     double drawingNumberDouble = pegbar->getDrawingNumber(r);
     int drawingNumber          = drawingNumberDouble;
@@ -582,11 +614,11 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0,
     const TXshCell *output;
 
     if (drawingNumber > 0) {
+
       if (cellNumber == drawingNumber && !behindcell.isEmpty() &&
           behindcell.getFrameId().getNumber() == drawingNumber) {
-        TXshCell newCell = TXshCell(0, 0);
-        setCell(r, col, newCell);
-        cell = newCell;
+        setCell(r, col, zeroCell);
+        cell = zeroCell;
       } else {
         TXshCell newCell = TXshCell(cell.m_level, drawingNumber);
         setCell(r, col, newCell);
