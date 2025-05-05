@@ -55,6 +55,7 @@ TEnv::IntVar LockGlobalScale("EditToolLockGlobalScale", 0);
 
 TEnv::IntVar ShowEWNSposition("EditToolShowEWNSposition", 1);
 TEnv::IntVar ShowZposition("EditToolShowZposition", 1);
+TEnv::IntVar ShowDrawingNumber("EditToolShowDrawingNumber", 0);
 TEnv::IntVar ShowSOposition("EditToolShowSOposition", 1);
 TEnv::IntVar ShowRotation("EditToolShowRotation", 1);
 TEnv::IntVar ShowGlobalScale("EditToolShowGlobalScale", 1);
@@ -172,6 +173,7 @@ public:
       m_before.add(TStageObject::T_X);
       m_before.add(TStageObject::T_Y);
       m_before.add(TStageObject::T_Z);
+      m_before.add(TStageObject::T_DrawingNumber);
       m_before.add(TStageObject::T_SO);
       m_before.add(TStageObject::T_ScaleX);
       m_before.add(TStageObject::T_ScaleY);
@@ -198,6 +200,7 @@ public:
       m_before.add(TStageObject::T_X);
       m_before.add(TStageObject::T_Y);
       m_before.add(TStageObject::T_Z);
+      m_before.add(TStageObject::T_DrawingNumber);
       m_before.add(TStageObject::T_SO);
       m_before.add(TStageObject::T_ScaleX);
       m_before.add(TStageObject::T_ScaleY);
@@ -667,6 +670,7 @@ EditTool::EditTool()
     , m_lockGlobalScale("Lock Global Scale", false)
     , m_showEWNSposition("X and Y Positions", true)
     , m_showZposition("Z Position", true)
+    , m_showDrawingNumber("Drawing Number", true)
     , m_showSOposition("SO", true)
     , m_showRotation("Rotation", true)
     , m_showGlobalScale("Global Scale", true)
@@ -695,6 +699,7 @@ EditTool::EditTool()
 
   m_prop.bind(m_showEWNSposition);
   m_prop.bind(m_showZposition);
+  m_prop.bind(m_showDrawingNumber);
   m_prop.bind(m_showSOposition);
   m_prop.bind(m_showRotation);
   m_prop.bind(m_showGlobalScale);
@@ -760,6 +765,7 @@ void EditTool::updateTranslation() {
   m_lockGlobalScale.setQStringName(tr("Lock Global Scale"));
   m_showEWNSposition.setQStringName(tr("X and Y Positions"));
   m_showZposition.setQStringName(tr("Z Position"));
+  m_showDrawingNumber.setQStringName(tr("Drawing Number"));
   m_showSOposition.setQStringName(tr("SO"));
   m_showRotation.setQStringName(tr("Rotation"));
   m_showGlobalScale.setQStringName(tr("Global Scale"));
@@ -967,7 +973,7 @@ void EditTool::onEditAllLeftButtonDown(TPointD &pos, const TMouseEvent &e) {
             TStageObjectId colId = TStageObjectId::ColumnId(columnIndex);
             TStageObjectCmd::setParent(curColId, colId, "", xshHandle);
             m_what = None;
-            xshHandle->notifyXsheetChanged();
+            xshHandle->notifyXsheetChanged();  
           } else {
             TXshColumn *column = xsh->getColumn(columnIndex);
             if (!column || !column->isLocked()) {
@@ -1482,6 +1488,8 @@ void EditTool::onActivate() {
 
     m_showEWNSposition.setValue(ShowEWNSposition ? 1 : 0);
     m_showZposition.setValue(ShowZposition ? 1 : 0);
+    m_showDrawingNumber.setValue(ShowDrawingNumber ? 1 : 0);
+
     m_showSOposition.setValue(ShowSOposition ? 1 : 0);
     m_showRotation.setValue(ShowRotation ? 1 : 0);
     m_showGlobalScale.setValue(ShowGlobalScale ? 1 : 0);
@@ -1565,6 +1573,8 @@ bool EditTool::onPropertyChanged(std::string propertyName) {
 
   else if (propertyName == m_showZposition.getName())
     ShowZposition = (int)m_showZposition.getValue();
+  else if (propertyName == m_showDrawingNumber.getName())
+    ShowDrawingNumber = (int)m_showDrawingNumber.getValue();
 
   else if (propertyName == m_showSOposition.getName())
     ShowSOposition = (int)m_showSOposition.getValue();

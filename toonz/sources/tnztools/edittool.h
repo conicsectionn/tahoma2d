@@ -78,6 +78,7 @@ class EditTool final : public QObject, public TTool {
   TBoolProperty m_showHVscale;
   TBoolProperty m_showShear;
   TBoolProperty m_showCenterPosition;
+  TBoolProperty m_showDrawingNumber; 
 
   TEnumProperty m_activeAxis;
 

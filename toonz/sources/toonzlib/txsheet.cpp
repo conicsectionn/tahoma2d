@@ -584,18 +584,18 @@ void TXsheet::updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter
   TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
   if (drawingNumberParamP->getKeyframeCount() <= 1) return; 
   int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0);
-  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()); 
+  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()-1); 
   
   if (frameAfter <= firstkeyframeindex)
   {
-    updateNonZeroDrawingNumberCells(col, std::min(frameAfter + dt, frameAfter )); 
+    updateNonZeroDrawingNumberCells(col, std::min(frameAfter - dt, frameAfter )); 
   } else if (frameAfter >= lastkeyframeindex) {
-    updateNonZeroDrawingNumberCells(col, std::max(frameAfter + dt, frameAfter)); 
+    updateNonZeroDrawingNumberCells(col, std::max(frameAfter - dt, frameAfter)); 
   } else {
     updateNonZeroDrawingNumberCells(col, frameAfter); 
   }
 
-  updateNonZeroDrawingNumberCells(col, frameAfter-dt); 
+  //updateNonZeroDrawingNumberCells(col, frameAfter - dt);
 }
 void TXsheet::updateNonZeroDrawingNumberCellsBox(int r0, int c0, int r1, int c1) {
   for (int c = c0; c <= c1; c++) {
@@ -624,7 +624,7 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
   if (updateRange.first == -1 || updateRange.second == -1) return; 
   TXshCell zeroCell = TXshCell(0, 0);
 
-  TXshCell cell;
+  TXshCell cell; 
   // ensure first cell is not empty
   TXshCell firstcell = getCell(updateRange.first, col); 
   int firstcellindex              = updateRange.first; 
@@ -650,8 +650,8 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
   int behindCellDrawingNumber = -1; 
 
   int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0); 
-  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()); 
-
+  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()-1); 
+  
   for (int r = updateRange.first; r <= updateRange.second; r++) {
     if (r < firstkeyframeindex || r > lastkeyframeindex) {
       setCell(r, col, zeroCell);
@@ -668,6 +668,7 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
    }
     
   }
+  
 }
 
 //-----------------------------------------------------------------------------
