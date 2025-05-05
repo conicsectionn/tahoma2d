@@ -1533,6 +1533,39 @@ void XsheetViewer::onSceneSwitched() {
 //-----------------------------------------------------------------------------
 
 void XsheetViewer::onXsheetChanged() {
+  /*
+  TApp *app                   = TApp::instance();
+  TXsheetHandle *xsheetHandle = app->getCurrentXsheet();
+  TXsheetP txsheet            = xsheetHandle->getXsheet(); 
+
+  XsheetViewer *xv = TApp::instance()->getCurrentXsheetViewer();
+  if (xv != nullptr)
+  {
+    TKeyframeSelection *keyframeSelection = xv->getKeyframeSelection();
+    std::set<TKeyframeSelection::Position> selection =
+        keyframeSelection->getSelection();
+
+    // qDebug() << selection.size() << "\n";
+
+    int last  = -1;
+    int first = -1;
+
+    for (TKeyframeSelection::Position pos : selection) {
+      int row = pos.first;
+      int col = pos.second;
+      last    = std::max(row, last);
+      first   = std::min(col, first);
+    }
+
+    // qDebug() << "first : " << first << " last :" << last << " count : " <<
+    // selectedFrames.size() << "\n";
+    for (int i = 1; i <= txsheet->getColumnCount(); i++) {
+      txsheet->updateNonZeroDrawingNumberCells(i, last, INT_MAX, first, last);
+    }
+
+    // QPair<TDoubleParamP, int>  x = m_selection->getSelectedKeyframe(); 
+  }
+  */
   refreshContentSize(0, 0);
   updateAllAree();
 

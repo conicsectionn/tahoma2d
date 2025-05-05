@@ -3416,9 +3416,11 @@ void CellArea::drawKeyframeLine(QPainter &p, int col,
   TStageObject *pegbar = xsh->getStageObject(TStageObjectId::ColumnId(col));
   double drawingNumberDouble = pegbar->getDrawingNumber(row);
 
+  p.setPen(m_viewer->getKeyframeLineColor());
+  p.drawLine(QLine(begin, end));
+  /*
   if (drawingNumberDouble > 0) {
     // create green tint
-
     QPen pen(Qt::white);        
     pen.setStyle(Qt::DashLine);  
     p.setPen(pen);              
@@ -3429,6 +3431,7 @@ void CellArea::drawKeyframeLine(QPainter &p, int col,
      p.setPen(m_viewer->getKeyframeLineColor());
      p.drawLine(QLine(begin, end));
   }
+  */
 }
 //-----------------------------------------------------------------------------
 

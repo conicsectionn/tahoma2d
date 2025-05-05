@@ -435,7 +435,7 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
   m_posPath->addObserver(this);
 
   m_drawingnumber->setName("W_Drawing_Number");
-  m_drawingnumber->setMeasureName("dummy"); 
+  //m_drawingnumber->setMeasureName("dummy"); 
   m_drawingnumber->addObserver(this);
 
   m_tree->setGrammar(m_x);
@@ -874,7 +874,7 @@ TStageObject::Keyframe TStageObject::getKeyframe(int frame) const {
     k.m_channels[TStageObject::T_Path]   = m_posPath->getValue(frame);
     k.m_channels[TStageObject::T_ShearX] = m_shearx->getValue(frame);
     k.m_channels[TStageObject::T_ShearY] = m_sheary->getValue(frame);
-    k.m_channels[TStageObject::T_DrawingNumber] = m_drawingnumber->isKeyframe(frame); 
+    k.m_channels[TStageObject::T_DrawingNumber] = m_drawingnumber->getValue(frame); 
 
     if (m_skeletonDeformation)
       m_skeletonDeformation->getKeyframeAt(frame, k.m_skeletonKeyframe);

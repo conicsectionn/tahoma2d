@@ -546,102 +546,127 @@ int TXsheet::getMaxFrame(int col) const {
   if (!column) return 0;
   return column->getMaxFrame();
 }
+/*
+QPair<int, int> chooseBounds(, int frame, int frameEnd,
+                             int keyframeStart,
+                             int keyframeEnd) {
 
+}*/
 //-----------------------------------------------------------------------------
-void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame = 0,
-                                              int frameEnd) {
-  int max_distance = 50; 
-  int original_frame = frame; 
-  TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col));
-  TParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
+void TXsheet::getUpdateRange(int col, int frame, QPair<int, int> *output) {
+  TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
+  if (pegbar == nullptr) return; 
+  TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
+  TXshColumn *column          = getColumn(col); 
+  if (column == nullptr) return; 
+  int keyframeAmount = drawingNumberParamP->getKeyframeCount(); 
+  if (drawingNumberParamP->getKeyframeCount() == 0) return; 
+  int closestIndex = drawingNumberParamP->getClosestKeyframe(frame);
 
-  TXshColumn* column = getColumn(col); 
-  //TColumnSelection *colSel = TApp::instance()->getCurrentSelection()->getColumnSelection();
-  if (column->isLocked() || column->isParentFolderLocked()) return; 
-  
-  if (!drawingNumberParamP->hasKeyframes()) return; 
-  
-  int nextKeyFrameIndex = drawingNumberParamP->getNextKeyframe(frame);
-  int nextKeyFrame =
-      nextKeyFrameIndex == -1
-          ? -1
-          : drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
+  int prevKeyFrameIndex = std :: max(closestIndex-1, 0); 
+  int nextKeyFrameIndex = std :: min(closestIndex+1, keyframeAmount-1); 
+  // set variabels 
+  int maximumFrame = column->getMaxFrame(); 
+  // get surrounding keyframes, 
+  output->first  = drawingNumberParamP->keyframeIndexToFrame(prevKeyFrameIndex); 
+  output->second = drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
 
-  if (nextKeyFrameIndex == -1) {
-    frame = drawingNumberParamP->getPrevKeyframe(frame) + 1; 
-    nextKeyFrameIndex = drawingNumberParamP->getNextKeyframe(frame);
-    nextKeyFrame =
-        nextKeyFrameIndex == -1
-            ? -1
-            : drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
+  if (frame < output->first) {
+    output->first = frame; 
+  } else if (frame > output->second) {
+    output->second = frame;   
   }
 
-  int prevKeyFrameIndex = drawingNumberParamP->getPrevKeyframe(frame);
-  int prevKeyFrame =
-      prevKeyFrameIndex == -1
-          ? -1
-          : drawingNumberParamP->keyframeIndexToFrame(prevKeyFrameIndex);
+}
+void TXsheet::updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter, int dt) {
+  TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
+  if (pegbar == nullptr) return;
+  TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
+  if (drawingNumberParamP->getKeyframeCount() <= 1) return; 
+  int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0);
+  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()); 
   
+  if (frameAfter <= firstkeyframeindex)
+  {
+    updateNonZeroDrawingNumberCells(col, std::min(frameAfter + dt, frameAfter )); 
+  } else if (frameAfter >= lastkeyframeindex) {
+    updateNonZeroDrawingNumberCells(col, std::max(frameAfter + dt, frameAfter)); 
+  } else {
+    updateNonZeroDrawingNumberCells(col, frameAfter); 
+  }
 
+  updateNonZeroDrawingNumberCells(col, frameAfter-dt); 
+}
+void TXsheet::updateNonZeroDrawingNumberCellsBox(int r0, int c0, int r1, int c1) {
+  for (int c = c0; c <= c1; c++) {
+    updateNonZeroDrawingNumberCells(c, r0, r1); 
+  }
+}
 
-  //qDebug() << prevKeyFrame << " next " << nextKeyFrame << "\n";
-  int maxFrame = getMaxFrame(col);
-
-  int row = prevKeyFrame;
-  row     = row == -1 ? 0 : row;
-
-  frameEnd = std::min(frameEnd, maxFrame);
-  frameEnd = nextKeyFrame == -1 ? frameEnd : std::max(frameEnd, nextKeyFrame);
-
-
-  //qDebug() << row << " to " << frameEnd << "\n";
-  const TXshCell &constbehindcell = getCell(row - 1, col, true);
-  TXshCell behindcell             = constbehindcell;
-
-  
-  frameEnd = std ::min(frameEnd, original_frame + max_distance);
-  row      = std ::max(row, std::max(original_frame - max_distance, 0)); 
-  
-  qDebug() << row << " to " << frameEnd << "\n";
+void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
+                                              int frameEnd, int keyframeStart,
+                                              int keyframeEnd) {
+  // check whether column and stage object are valid
+  TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col)); 
+  if (pegbar == nullptr) return; 
+  TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
+  TXshColumn* column = getColumn(col); 
+  qDebug() << frame << "\n"; 
+  if (column == nullptr) return; 
+  // do not alter locked columns
+  if (column->isLocked() || column->getParentFolder() != nullptr && column->isParentFolderLocked()) return; 
+  // only alter if it has keyframes for drawingnumber
+  if (!drawingNumberParamP->hasKeyframes()) return; 
+  // get keyframe indexes
+  QPair<int, int> updateRange{-1, -1};
+  getUpdateRange(col, frame, &updateRange); 
+  qDebug() << updateRange.first << "," << updateRange.second << "\n";
+  if (updateRange.first == -1 || updateRange.second == -1) return; 
   TXshCell zeroCell = TXshCell(0, 0);
-  for (int r = row; r <= frameEnd; r++) {
+
+  TXshCell cell;
+  // ensure first cell is not empty
+  TXshCell firstcell = getCell(updateRange.first, col); 
+  int firstcellindex              = updateRange.first; 
+  while (firstcell.isEmpty()) {
+    if (firstcellindex >= updateRange.second - 1) return; 
+    firstcellindex++;
+    firstcell = getCell(firstcellindex, col);  
+  }
+ 
+  // loop through cells and set their id 
+  for (int r = updateRange.first; r <= updateRange.second; r++) {
     double drawingNumberDouble = pegbar->getDrawingNumber(r);
     int drawingNumber          = drawingNumberDouble;
-    const TXshCell &constcell  = getCell(r, col);
-    TXshCell cell              = constcell;
+    if (!drawingNumber) continue; // check for non zero drawing number
+    cell                       = getCell(r, col);
+    if (cell.isEmpty()) cell.m_level = firstcell.m_level; 
+    cell.m_frameId = drawingNumber; 
+    setCell(r, col, cell);
+  }
+  // trigger implicit holds
+  
+  TXshCell behindcell         = zeroCell;
+  int behindCellDrawingNumber = -1; 
 
-    int cellNumber = cell.getFrameId().getNumber();
-    const TXshCell *output;
+  int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0); 
+  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()); 
 
-    if (drawingNumber > 0) {
-
-      if (cellNumber == drawingNumber && !behindcell.isEmpty() &&
-          behindcell.getFrameId().getNumber() == drawingNumber) {
-        setCell(r, col, zeroCell);
-        cell = zeroCell;
-      } else {
-        TXshCell newCell = TXshCell(cell.m_level, drawingNumber);
-        setCell(r, col, newCell);
-        cell       = newCell;
-        behindcell = cell;
-      }
+  for (int r = updateRange.first; r <= updateRange.second; r++) {
+    if (r < firstkeyframeindex || r > lastkeyframeindex) {
+      setCell(r, col, zeroCell);
+      continue;
     }
-    if (!cell.isEmpty()) {
-      behindcell = cell;
-    }
-    /*
-    if (drawingNumber > 0 && cellNumber != drawingNumber) {
-
-      if (behindcell.getFrameId().getNumber() != drawingNumber) {
-        xsh->setCell(r, col, TXshCell(cell.m_level, drawingNumber));
-        previousCell = &cell;
-      } else if (!cell.isEmpty()) {
-
-      }
-    } else if (!cell.isEmpty()) {
-      previousCell = &cell;
-    }
-    */
+   double drawingNumberDouble = pegbar->getDrawingNumber(r);
+   int drawingNumber          = drawingNumberDouble;
+   cell                       = getCell(r, col);
+   if (!behindcell.isEmpty() && behindCellDrawingNumber == drawingNumber) {
+     setCell(r, col, zeroCell);
+   } else {
+     behindcell = getCell(r, col);
+     behindCellDrawingNumber = drawingNumber; 
+   }
+    
   }
 }
 

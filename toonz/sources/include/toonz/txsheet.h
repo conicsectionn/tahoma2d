@@ -276,8 +276,15 @@ public:
   */
   int getMaxFrame(int col) const;
 
-  void updateNonZeroDrawingNumberCells(int col, int frame,
-                                       int frameEnd = INT_MAX);
+  void getUpdateRange(int col, int frame, QPair<int, int> *output);
+
+  void updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter,
+                                                  int dt);
+
+  void updateNonZeroDrawingNumberCellsBox(int r0, int c0, int r1, int c1);
+
+  void updateNonZeroDrawingNumberCells(int col, int frame = 0,
+                                       int frameEnd = INT_MAX, int keyframeStart = -1, int keyFrameEnd = -1);
   /*! Returns true if xsheet column identified by \b \e col is empty, it calls
           \b TXshColumn::isEmpty(), otherwise returns false.
   */

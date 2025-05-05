@@ -46,6 +46,8 @@
 #include <QToolBar>
 #include <QAction>
 
+#include <QDebug>
+
 using namespace DVGui;
 
 TEnv::IntVar FunctionEditorToggleStatus("FunctionEditorToggleStatus", 1);
@@ -549,8 +551,33 @@ void FunctionViewer::toggleMode() {
 //-----------------------------------------------------------------------------
 
 void FunctionViewer::onCurveChanged(bool isDragging) {
-  if (m_objectHandle) m_objectHandle->notifyObjectIdChanged(isDragging);
 
+  /*
+  if (m_objectHandle) m_objectHandle->notifyObjectIdChanged(isDragging);
+  TXsheetP txsheet = m_xshHandle->getXsheet(); 
+  /*
+  XsheetViewer *xv = TApp::instance()->getCurrentXsheetViewer();
+  TKeyframeSelection* keyframeSelection = xv->getKeyframeSelection(); 
+  std::set<TKeyframeSelection::Position> selection          = keyframeSelection->getSelection(); 
+  
+  qDebug() << selection.size() << "\n"; 
+  
+ 
+  QList <int> selectedFrames = keyframeSelection->get m_selection->getSelectedKeyIndices(m_curve);
+  */
+  int last  = -1;  // selectedFrames.back(); 
+  int first = -1;   // selectedFrames.front(); 
+  /*
+  if (selectedFrames.count() == 0) {
+    last = -1; 
+    first = -1; 
+  }
+  */
+  
+  //qDebug() << "first : " << first << " last :" << last << " count : " << selectedFrames.size() << "\n"; 
+  //txsheet->updateNonZeroDrawingNumberCells(m_columnHandle->getColumnIndex(),last, INT_MAX, first, last); 
+  
+  //QPair<TDoubleParamP, int>  x = m_selection->getSelectedKeyframe(); 
   // emit signal if the current channel belongs to Fx in order to update the
   // preview fx
   if (m_fxHandle) {
