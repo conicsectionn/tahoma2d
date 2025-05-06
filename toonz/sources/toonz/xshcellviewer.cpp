@@ -3410,12 +3410,6 @@ void CellArea::drawKeyframeLine(QPainter &p, int col,
 
   // draw drawing keyframe informaiton
   
-  TXsheet *xsh         = m_viewer->getXsheet();
-  int row = std::max(rows.to(),rows.from()); 
-  TXshColumnP column   = xsh->getColumn(col);
-  TStageObject *pegbar = xsh->getStageObject(TStageObjectId::ColumnId(col));
-  double drawingNumberDouble = pegbar->getDrawingNumber(row);
-
   p.setPen(m_viewer->getKeyframeLineColor());
   p.drawLine(QLine(begin, end));
   /*

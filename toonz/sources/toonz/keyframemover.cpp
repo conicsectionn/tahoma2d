@@ -172,7 +172,7 @@ bool KeyframeMover::moveKeyframes(
           xsh->updateNonZeroDrawingNumberCellsAfterMoving(c, r + dr, dr); 
         } else
           stObj->moveKeyframe(r + dr, r);
-          xsh->updateNonZeroDrawingNumberCellsAfterMoving(c, r + dr, dr); 
+        xsh->updateNonZeroDrawingNumberCellsAfterMoving(c, r + dr, dr); 
         newPositions.insert(TKeyframeSelection::Position(r + dr, c));
       }
     }

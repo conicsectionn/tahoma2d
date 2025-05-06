@@ -743,7 +743,7 @@ void StageBuilder::addFrame(PlayerSet &players, ToonzScene *scene, TXsheet *xsh,
     /*
     This is the code to handle drawing numbers;
     */
-    ///xsh->updateNonZeroDrawingNumberCells(c, row);
+    xsh->updateNonZeroDrawingNumberCells(c, row);
     //
   }
   std::stable_sort(shuffle.begin(), shuffle.end(), StackingOrder());

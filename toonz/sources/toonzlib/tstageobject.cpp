@@ -1507,7 +1507,7 @@ double TStageObject::getSO(double t) {
 double TStageObject::getDrawingNumber(double t) {
   double tt = paramsTime(t);
   if (m_parent)
-    return m_parent->getDrawingNumber(t) + m_drawingnumber->getValue(tt);
+    return /* m_parent->getDrawingNumber(t)*/ m_drawingnumber->getValue(tt);
   else
     return m_drawingnumber->getValue(tt);
 }

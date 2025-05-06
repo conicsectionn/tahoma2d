@@ -1259,9 +1259,10 @@ void ColumnArea::DrawHeader::drawConfig() const {
     p.drawRect(configRect);
 
   TXshZeraryFxColumn *zColumn = dynamic_cast<TXshZeraryFxColumn *>(column);
-
+  
   if (zColumn || column->getPaletteColumn() || column->getSoundTextColumn())
     return;
+    
 
   QPixmap icon = svgToPixmap(svgFilePath, configImgRect.size(),
                              Qt::KeepAspectRatio, bgColor);
@@ -1491,6 +1492,7 @@ void ColumnArea::DrawHeader::drawThumbnail(QPixmap &iconPixmap) const {
   if (o->flag(PredefinedFlag::THUMBNAIL_AREA_BORDER)) p.drawRect(thumbnailRect);
 
   // sound thumbnail
+  /*
   if (column->getSoundColumn()) {
     TXshSoundColumn *sc =
         xsh->getColumn(col) ? xsh->getColumn(col)->getSoundColumn() : 0;
@@ -1502,9 +1504,11 @@ void ColumnArea::DrawHeader::drawThumbnail(QPixmap &iconPixmap) const {
       drawVolumeControl(sc->getVolume());
     return;
   }
+  */
 
   // Folder thumbnail
   if (column->getFolderColumn()) {
+
     TXshFolderColumn *lfc =
         xsh->getColumn(col) ? xsh->getColumn(col)->getFolderColumn() : 0;
 
@@ -2386,7 +2390,7 @@ void ColumnArea::paintEvent(QPaintEvent *event) {  // AREA
       drawFoldedColumnHead(p, col);
     } else {
       TXshColumn *column = m_viewer->getXsheet()->getColumn(col);
-
+     
       int colType = (column && !column->isEmpty()) ? column->getColumnType()
                                                    : TXshColumn::eLevelType;
 

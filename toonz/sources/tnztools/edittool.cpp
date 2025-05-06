@@ -630,21 +630,23 @@ public:
     currentDrawingNumber = getOldValue(1); 
     start();
   }
+  void shiftToggle() { 
+    affectingDrawingNumber = !affectingDrawingNumber;
+  }
   void leftButtonDrag(const TPointD &pos, const TMouseEvent &e) override {
     double dz = m_viewer->projectToZ(e.m_pos - m_lastPos);
-    double dx = (e.m_pos - m_lastPos).x * 0.05;
+    double dx = (e.m_pos - m_lastPos).x * 0.07;
     // precise control with pressing Alt key
     if (e.isAltPressed()) {
       dz *= 0.1;
-      dx *= 0.1; 
+      dx *= 0.1;
     }
     m_lastPos = e.m_pos;
-    if (e.isShiftPressed() && dx != 0.0) {
+
+    if (affectingDrawingNumber && dx != 0.0) {
       m_dx += dx; 
-      affectingDrawingNumber = true; 
-    } else if (dz != 0.0) {
+    } else if (!affectingDrawingNumber && dz != 0.0) {
       m_dz += dz;
-      affectingDrawingNumber = false; 
     }
     int dn = std::max(0, (int) std::round(getOldValue(1) + m_dx));
     setValues(getOldValue(0) + m_dz, dn);
@@ -843,6 +845,7 @@ const TStroke *EditTool::getSpline() const {
 //-----------------------------------------------------------------------------
 
 void EditTool::mouseMove(const TPointD &, const TMouseEvent &e) {
+
   /*-- return while left dragging --*/
   if (e.isLeftButtonPressed()) return;
 
@@ -872,8 +875,23 @@ void EditTool::mouseMove(const TPointD &, const TMouseEvent &e) {
   }
 
   // for adding decoration to the cursor while pressing Alt key
-  m_isAltPressed = e.isAltPressed();
-  m_isShiftPressed = e.isShiftPressed(); 
+  m_isAltPressed   = e.isAltPressed();
+  m_isShiftPressed = e.isShiftPressed();
+
+  DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool);
+  if (m_isShiftJustPressed)
+    m_isShiftJustPressed = false;
+  else if (m_isShiftPressed)
+    m_isShiftJustPressed = true;
+
+  if (m_isShiftJustPressed) {
+    if (ztool) {
+      ztool->shiftToggle();
+      isDisplayingDrawingNumber = ztool->affectingDrawingNumber;
+    } else {
+      isDisplayingDrawingNumber = !isDisplayingDrawingNumber;
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -953,6 +971,10 @@ void EditTool::leftButtonDown(const TPointD &ppos, const TMouseEvent &e) {
       break;
     case ZTranslation:
       m_dragTool = new DragZTool(m_viewer, m_globalKeyframes.getValue());
+      DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool); 
+      if (isDisplayingDrawingNumber) {
+        ztool->shiftToggle(); 
+      }
       break;
     }
   }
@@ -1020,6 +1042,11 @@ void EditTool::onEditAllLeftButtonDown(TPointD &pos, const TMouseEvent &e) {
 void EditTool::leftButtonDrag(const TPointD &pos, const TMouseEvent &e) {
   if (!m_dragTool) return;
   m_dragTool->leftButtonDrag(pos, e);
+  DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool); 
+  if (ztool != nullptr) {
+    if (m_isShiftJustPressed) 
+      ztool->shiftToggle(); 
+  }
   TTool::getApplication()->getCurrentObject()->notifyObjectIdChanged(true);
   invalidate();
 }
@@ -1468,7 +1495,9 @@ void EditTool::draw() {
     if (ztool && ztool->affectingDrawingNumber) {
       currentDrawingNumberDisplay = ztool->currentDrawingNumber;
     }
-    if (m_isShiftPressed)
+
+
+    if (isDisplayingDrawingNumber)
     {
       glPushMatrix();   
       glScaled(0.5,0.5,0.5);

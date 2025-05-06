@@ -22,6 +22,7 @@ class EditTool final : public QObject, public TTool {
   DragTool* m_dragTool;
   
   int currentDrawingNumberDisplay = 0; 
+  bool isDisplayingDrawingNumber  = false; 
 
   bool m_firstTime;
 
@@ -57,6 +58,7 @@ class EditTool final : public QObject, public TTool {
 
   bool m_isAltPressed;
   bool m_isShiftPressed; 
+  bool m_isShiftJustPressed; 
 
   TEnumProperty m_scaleConstraint;
   TEnumProperty m_autoSelect;
