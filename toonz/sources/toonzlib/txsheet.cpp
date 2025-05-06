@@ -623,6 +623,8 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
                                               int frameEnd, int keyframeStart,
                                               int keyframeEnd) {
   // check whether column and stage object are valid
+
+  int overrideOutside  = true; 
   TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col)); 
   if (pegbar == nullptr) return; 
   pegbar->checkForDrawingNumberUpdate = false; 
@@ -651,10 +653,19 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
     firstcell = getCell(firstcellindex, col);  
   }
   int behindCellDrawingNumber = -1; 
+
+  int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0);
+  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(
+      drawingNumberParamP->getKeyframeCount() - 1); 
+  
   // loop through cells and set their id 
   for (int r = updateRange.first; r <= updateRange.second; r++) {
     double drawingNumberDouble = pegbar->getDrawingNumber(r);
     int drawingNumber;
+    if (overrideOutside && (r < firstkeyframeindex || r > lastkeyframeindex)) {
+      setCell(r, col, zeroCell);
+      continue;
+    }
     if (behindCellDrawingNumber &&
         behindCellDrawingNumber >= drawingNumberDouble) {
       drawingNumber = std::ceil(drawingNumberDouble);
@@ -673,17 +684,15 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
   // trigger implicit holds
   
   TXshCell behindcell         = zeroCell;
-  behindCellDrawingNumber = -1; 
+  behindCellDrawingNumber          = updateRange.first >= 1
+      ? pegbar->getDrawingNumber(updateRange.first-1) : -1; 
 
-  int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0); 
-  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()-1); 
-  
   for (int r = updateRange.first; r <= updateRange.second; r++) {
     if (r < firstkeyframeindex || r > lastkeyframeindex) {
-      //setCell(r, col, zeroCell);
+      if (overrideOutside) setCell(r, col, zeroCell);
       continue;
     }
-   //double drawingNumberDouble = pegbar->getDrawingNumber(r);
+   double drawingNumberDouble = pegbar->getDrawingNumber(r);
    
    cell = getCell(r, col);
    int drawingNumber = cell.getFrameId().getNumber();

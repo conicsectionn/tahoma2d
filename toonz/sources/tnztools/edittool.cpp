@@ -265,7 +265,7 @@ public:
 // DragPositionTool
 //-----------------------------------------------------------------------------
 
-class DragPositionTool final : public DragChannelTool {
+class DragPositionTool : public DragChannelTool {
   bool m_lockPositionX;
   bool m_lockPositionY;
 
@@ -604,31 +604,52 @@ public:
 // DragZTool
 //-----------------------------------------------------------------------------
 
-class DragZTool final : public DragChannelTool {
+
+class DragZTool : public DragChannelTool {
   TPointD m_lastPos;
   TTool::Viewer *m_viewer;
   double m_dz;
+  double m_dx;
 
 public:
+  int currentDrawingNumber    = 0;
+  bool affectingDrawingNumber = false; 
+
   DragZTool(TTool::Viewer *viewer, bool globalKeyframesEnabled)
-      : DragChannelTool(TStageObject::T_Z, globalKeyframesEnabled)
-      , m_viewer(viewer) {}
+      : DragChannelTool(TStageObject::T_Z, TStageObject::T_DrawingNumber,  globalKeyframesEnabled)
+      , m_viewer(viewer) {
+
+  }
+  
 
   void leftButtonDown(const TPointD &pos, const TMouseEvent &e) override {
     m_lastPos  = e.m_pos;
     m_firstPos = pos;
     m_dz       = 0;
+    m_dx       = 0; 
+    currentDrawingNumber = getOldValue(1); 
     start();
   }
   void leftButtonDrag(const TPointD &pos, const TMouseEvent &e) override {
     double dz = m_viewer->projectToZ(e.m_pos - m_lastPos);
+    double dx = (e.m_pos - m_lastPos).x * 0.05;
     // precise control with pressing Alt key
-    if (e.isAltPressed()) dz *= 0.1;
-    m_lastPos = e.m_pos;
-    if (dz != 0.0) {
-      m_dz += dz;
-      setValue(getOldValue(0) + m_dz);
+    if (e.isAltPressed()) {
+      dz *= 0.1;
+      dx *= 0.1; 
     }
+    m_lastPos = e.m_pos;
+    if (e.isShiftPressed() && dx != 0.0) {
+      m_dx += dx; 
+      affectingDrawingNumber = true; 
+    } else if (dz != 0.0) {
+      m_dz += dz;
+      affectingDrawingNumber = false; 
+    }
+    int dn = std::max(0, (int) std::round(getOldValue(1) + m_dx));
+    setValues(getOldValue(0) + m_dz, dn);
+
+    currentDrawingNumber = dn; 
   }
 };
 
@@ -680,7 +701,8 @@ EditTool::EditTool()
     , m_dragTool(0)
     , m_firstTime(true)
     , m_activeAxis("Active Axis")
-    , m_isAltPressed(false) {
+    , m_isAltPressed(false)
+    , m_isShiftPressed(false) {
   bind(TTool::AllTargets);
   m_prop.bind(m_scaleConstraint);
   m_prop.bind(m_autoSelect);
@@ -851,6 +873,7 @@ void EditTool::mouseMove(const TPointD &, const TMouseEvent &e) {
 
   // for adding decoration to the cursor while pressing Alt key
   m_isAltPressed = e.isAltPressed();
+  m_isShiftPressed = e.isShiftPressed(); 
 }
 
 //-----------------------------------------------------------------------------
@@ -1088,6 +1111,69 @@ void drawCameraIcon() {
   glVertex2i(5, 6);
   glVertex2i(5, 0);
   glEnd();
+}
+
+void drawSimpleArrowNoBack() { 
+  glBegin(GL_LINE_STRIP);
+  glVertex2f(5, 3);
+  glVertex2f(-3, 3);
+  glVertex2f(-3, 6);
+  glVertex2f(-8, 0);
+  glVertex2f(-3, -6);
+  glVertex2f(-3, -3);
+  glVertex2f(5, -3);
+  //glVertex2f(5, 3);
+  glEnd();
+}
+void drawTwoSidedArrow() {
+  glBegin(GL_LINE_STRIP);
+  glVertex2f(5, 3);
+  glVertex2f(-3, 3);
+  glVertex2f(-3, 6);
+  glVertex2f(-8, 0);
+  glVertex2f(-3, -6);
+  glVertex2f(-3, -3);
+  glVertex2f(5, -3);
+  //glVertex2f(5, 3);
+  glEnd();
+}
+
+
+void drawDrawingNumberBox() {
+  /*
+  glBegin(GL_LINE_LOOP);
+  glVertex2i(-5,-5);
+  glVertex2i(5, -5);
+  glVertex2i(5, 5);
+  glVertex2i(-5, 5);
+  glEnd();
+  */
+  /*
+  glPushMatrix(); 
+  glTranslatef(-10, 0, 0);
+  drawSimpleArrow(); 
+
+  glPopMatrix(); 
+
+  glPushMatrix();
+  glRotatef(180, 0, 0, 1);  
+  glTranslatef(-10, 0, 0);
+  drawSimpleArrow();
+  glPopMatrix(); 
+  */
+
+  int dist = -5; 
+  glPushMatrix();
+  glTranslatef(0, 0, 0);
+  glTranslatef(dist, 0, 0);
+  drawSimpleArrowNoBack(); 
+  glRotatef(180,0,0,1.0);
+  glTranslatef(2 * dist, 0, 0);
+  drawSimpleArrowNoBack(); 
+
+  glPopMatrix();
+
+  
 }
 
 void drawZArrow() {
@@ -1377,7 +1463,33 @@ void EditTool::draw() {
     tglMultMatrix(camParentAff.inv() *
                   TTranslation(camAff * TPointD(0.0, 0.0)));
     glScaled(unit * 8, unit * 8, 1);
-    drawZArrow();
+
+    DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool); 
+    if (ztool && ztool->affectingDrawingNumber) {
+      currentDrawingNumberDisplay = ztool->currentDrawingNumber;
+    }
+    if (m_isShiftPressed)
+    {
+      glPushMatrix();   
+      glScaled(0.5,0.5,0.5);
+      drawDrawingNumberBox();
+      // Inside your draw() or onDraw() method of a tool:
+      double unit = 0.5;  // or something like viewer->getPixelSize()
+      TPointD pos(0, unit * 20);  // Position in world coordinates
+     
+      std::string label = "DN: " + std::to_string(currentDrawingNumberDisplay);
+
+      drawText(pos, unit, label);
+      glPopMatrix(); 
+    }
+    else
+    {
+      drawZArrow();
+    }
+   
+
+    
+
     glPopMatrix();
   }
   /*-- Rotation, Position : Draw vertical and horizontal lines --*/

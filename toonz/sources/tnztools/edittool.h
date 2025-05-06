@@ -20,6 +20,8 @@ class EditTool final : public QObject, public TTool {
   Q_OBJECT
 
   DragTool* m_dragTool;
+  
+  int currentDrawingNumberDisplay = 0; 
 
   bool m_firstTime;
 
@@ -54,6 +56,7 @@ class EditTool final : public QObject, public TTool {
   FxGadgetController* m_fxGadgetController;
 
   bool m_isAltPressed;
+  bool m_isShiftPressed; 
 
   TEnumProperty m_scaleConstraint;
   TEnumProperty m_autoSelect;
