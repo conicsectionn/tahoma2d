@@ -2199,8 +2199,18 @@ bool XsheetViewer::event(QEvent *e) {
   }
   return QFrame::event(e);
 }
-
-//=============================================================================
+void XsheetViewer::paintEvent(QPaintEvent *event) {
+  /*
+  
+  TXsheetHandle *xsh = TApp::instance()->getCurrentXsheet();
+  
+  xsh->getXsheet()->updateNonZeroDrawingComplete(
+      TApp::instance()->getCurrentFrame()->getFrameIndex(),
+      TApp::instance()->getCurrentColumn()->getColumnIndex()
+  );
+  */
+}
+    //=============================================================================
 // XSheetViewerCommand
 //-----------------------------------------------------------------------------
 

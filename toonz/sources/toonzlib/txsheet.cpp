@@ -553,10 +553,13 @@ QPair<int, int> chooseBounds(, int frame, int frameEnd,
 
 }*/
 //-----------------------------------------------------------------------------
-void TXsheet::getUpdateRange(int col, int frame, QPair<int, int> *output) {
+void TXsheet::getUpdateRange(
+    int col, int frame, QPair<int, int> *output,
+                             int channel
+                                 = TStageObject::T_DrawingNumber) {
   TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
   if (pegbar == nullptr) return; 
-  TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
+  TDoubleParamP drawingNumberParamP = pegbar->getParam((TStageObject::Channel)channel);
   TXshColumn *column          = getColumn(col); 
   if (column == nullptr) return; 
   int keyframeAmount = drawingNumberParamP->getKeyframeCount(); 
@@ -577,6 +580,18 @@ void TXsheet::getUpdateRange(int col, int frame, QPair<int, int> *output) {
     output->second = frame;   
   }
 
+}
+void TXsheet::updateNonZeroDrawingComplete(int frame, int currentColumn) { 
+  for (int col = 0; col <= getColumnCount(); col++)
+  {
+    TXshColumn *column                  = getColumn(col);
+    if (column == nullptr || column->getColumnType() != TXshColumn::eLevelType) continue; 
+    TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
+    if (pegbar == nullptr) continue; 
+    if (!pegbar->checkForDrawingNumberUpdate) continue; 
+    pegbar->checkForDrawingNumberUpdate = false; 
+    updateNonZeroDrawingNumberCells(col, frame); 
+  }
 }
 void TXsheet::updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter, int dt) {
   TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
@@ -603,16 +618,18 @@ void TXsheet::updateNonZeroDrawingNumberCellsBox(int r0, int c0, int r1, int c1)
   }
 }
 
+
 void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
                                               int frameEnd, int keyframeStart,
                                               int keyframeEnd) {
   // check whether column and stage object are valid
   TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col)); 
   if (pegbar == nullptr) return; 
+  pegbar->checkForDrawingNumberUpdate = false; 
   TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
   TXshColumn* column = getColumn(col); 
   qDebug() << frame << "\n"; 
-  if (column == nullptr) return; 
+  if (column == nullptr || column->getColumnType() != TXshColumn::eLevelType) return; 
   // do not alter locked columns
   if (column->isLocked() || column->getParentFolder() != nullptr && column->isParentFolderLocked()) return; 
   // only alter if it has keyframes for drawingnumber

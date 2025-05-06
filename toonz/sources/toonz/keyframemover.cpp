@@ -155,6 +155,7 @@ bool KeyframeMover::moveKeyframes(
         } else
           stObj->moveKeyframe(r + dr, r);
         xsh->updateNonZeroDrawingNumberCellsAfterMoving(c, r + dr, dr); 
+        
         newPositions.insert(TKeyframeSelection::Position(r + dr, c));
       }
     } else {  // ... and vice versa

@@ -604,6 +604,9 @@ private:
   void updateKeyframes(LazyData &ld) const;
 
   void onChange(const class TParamChange &c) override;
+
+public: 
+  int checkForDrawingNumberUpdate = false;
 };
 
 //-----------------------------------------------------------------------------

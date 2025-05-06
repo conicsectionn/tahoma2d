@@ -29,6 +29,7 @@
 
 // Qt includes
 #include <QMetaObject>
+#include <QDebug>
 
 // STD includes
 #include <fstream>
@@ -526,6 +527,10 @@ void TStageObject::onChange(const class TParamChange &c) {
     m_lazyData.invalidate();  // Both invalidate placement AND keyframes
   else
     invalidate();  // Invalidate placement only
+  TDoubleKeyframe::Type type =
+  m_drawingnumber->getKeyframeAt(c.m_minFrame).m_type;  
+
+  checkForDrawingNumberUpdate = true; 
 }
 
 //-----------------------------------------------------------------------------

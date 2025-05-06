@@ -276,7 +276,10 @@ public:
   */
   int getMaxFrame(int col) const;
 
-  void getUpdateRange(int col, int frame, QPair<int, int> *output);
+  void getUpdateRange(int col, int frame, QPair<int, int> *output,
+      int channel);
+
+  void updateNonZeroDrawingComplete (int frame, int currentCol = -1);
 
   void updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter,
                                                   int dt);

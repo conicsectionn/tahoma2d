@@ -551,7 +551,14 @@ void FunctionViewer::toggleMode() {
 //-----------------------------------------------------------------------------
 
 void FunctionViewer::onCurveChanged(bool isDragging) {
-
+  /*
+  TXsheetP txsheet = m_xshHandle->getXsheet(); 
+  
+  txsheet->updateNonZeroDrawingNumberCells(
+      m_columnHandle->getColumnIndex(), 
+      m_frameHandle->getFrame()
+    ); 
+  */
   /*
   if (m_objectHandle) m_objectHandle->notifyObjectIdChanged(isDragging);
   TXsheetP txsheet = m_xshHandle->getXsheet(); 
