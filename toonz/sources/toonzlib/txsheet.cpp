@@ -650,11 +650,20 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
     firstcellindex++;
     firstcell = getCell(firstcellindex, col);  
   }
- 
+  int behindCellDrawingNumber = -1; 
   // loop through cells and set their id 
   for (int r = updateRange.first; r <= updateRange.second; r++) {
     double drawingNumberDouble = pegbar->getDrawingNumber(r);
-    int drawingNumber          = drawingNumberDouble;
+    int drawingNumber;
+    if (behindCellDrawingNumber &&
+        behindCellDrawingNumber >= drawingNumberDouble) {
+      drawingNumber = std::ceil(drawingNumberDouble);
+    }
+    else
+    {
+      drawingNumber = std::floor(drawingNumberDouble);
+    }
+    behindCellDrawingNumber = drawingNumber; 
     if (!drawingNumber) continue; // check for non zero drawing number
     cell                       = getCell(r, col);
     if (cell.isEmpty()) cell.m_level = firstcell.m_level; 
@@ -664,19 +673,20 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
   // trigger implicit holds
   
   TXshCell behindcell         = zeroCell;
-  int behindCellDrawingNumber = -1; 
+  behindCellDrawingNumber = -1; 
 
   int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0); 
   int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(drawingNumberParamP->getKeyframeCount()-1); 
   
   for (int r = updateRange.first; r <= updateRange.second; r++) {
     if (r < firstkeyframeindex || r > lastkeyframeindex) {
-      setCell(r, col, zeroCell);
+      //setCell(r, col, zeroCell);
       continue;
     }
-   double drawingNumberDouble = pegbar->getDrawingNumber(r);
-   int drawingNumber          = drawingNumberDouble;
-   cell                       = getCell(r, col);
+   //double drawingNumberDouble = pegbar->getDrawingNumber(r);
+   
+   cell = getCell(r, col);
+   int drawingNumber = cell.getFrameId().getNumber();
    if (!behindcell.isEmpty() && behindCellDrawingNumber == drawingNumber) {
      setCell(r, col, zeroCell);
    } else {
