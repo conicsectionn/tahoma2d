@@ -587,6 +587,8 @@ void FunctionViewer::onCurveChanged(bool isDragging) {
   //QPair<TDoubleParamP, int>  x = m_selection->getSelectedKeyframe(); 
   // emit signal if the current channel belongs to Fx in order to update the
   // preview fx
+  if (m_objectHandle) m_objectHandle->notifyObjectIdChanged(isDragging);
+
   if (m_fxHandle) {
     FunctionTreeModel *ftModel =
         dynamic_cast<FunctionTreeModel *>(m_treeView->model());
