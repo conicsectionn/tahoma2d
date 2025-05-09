@@ -3555,6 +3555,14 @@ public:
     m_area->update();
     TApp::instance()->getCurrentScene()->setDirtyFlag(true);
     TApp::instance()->getCurrentObject()->notifyObjectIdChanged(false);
+
+    TApp *app    = TApp::instance();
+    TXsheet *xsh = app->getCurrentXsheet()->getXsheet();
+    TStageObjectId id = m_pegbar->getId();
+    if (id.isColumn()) {
+      xsh->updateNonZeroDrawingNumberCells(id.getIndex(), INT_MAX); 
+    }
+    
   }
   void redo() const override { undo(); }
   int getSize() const override { return sizeof *this; }

@@ -44,8 +44,7 @@
 // STD includes
 #include <set>
 #include <QDebug>
-#include "../toonz/columnselection.h"
-#include "../toonz/tapp.h"
+
 using namespace std;
 
 DEFINE_CLASS_CODE(TXsheet, 18)
@@ -568,12 +567,21 @@ void TXsheet::getUpdateRange(
 
   int prevKeyFrameIndex = std :: max(closestIndex-1, 0); 
   int nextKeyFrameIndex = std :: min(closestIndex+1, keyframeAmount-1); 
+
   // set variabels 
   int maximumFrame = column->getMaxFrame(); 
   // get surrounding keyframes, 
   output->first  = drawingNumberParamP->keyframeIndexToFrame(prevKeyFrameIndex); 
   output->second = drawingNumberParamP->keyframeIndexToFrame(nextKeyFrameIndex);
+  int trueOrNot  = drawingNumberParamP->isCycleEnabled(); 
 
+  if (pegbar->isCycleEnabled() && nextKeyFrameIndex == keyframeAmount - 1) {
+    for (int c = 0; c < getColumnCount(); c++) {
+      output->second = std::max(getMaxFrame(c), output->second); 
+    }
+  }
+
+  qDebug() << "hello:" << output->first << "," << output->second << "," << frame << prevKeyFrameIndex << "," << nextKeyFrameIndex << "\n";
   if (frame < output->first) {
     output->first = frame; 
   } else if (frame > output->second) {
@@ -617,6 +625,7 @@ void TXsheet::updateNonZeroDrawingNumberCellsBox(int r0, int c0, int r1, int c1)
 void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
                                               int frameEnd, int keyframeStart,
                                               int keyframeEnd) {
+
   // check whether column and stage object are valid
   int overrideOutside  = true; 
   TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col)); 
@@ -630,6 +639,7 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
   // only alter if it has keyframes for drawingnumber
   if (!drawingNumberParamP->hasKeyframes()) return; 
   // get keyframe indexes
+  if (frame == INT_MAX) frame = column->getMaxFrame(); 
   QPair<int, int> updateRange{-1, -1};
   getUpdateRange(col, frame, &updateRange); 
   qDebug() << updateRange.first << "," << updateRange.second << "\n";
@@ -648,15 +658,17 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
   int behindCellDrawingNumber = -1; 
 
   int firstkeyframeindex = drawingNumberParamP->keyframeIndexToFrame(0);
-  int lastkeyframeindex  = drawingNumberParamP->keyframeIndexToFrame(
+  int lastkeyframeindex  = pegbar->isCycleEnabled() ? INT_MAX : drawingNumberParamP->keyframeIndexToFrame(
       drawingNumberParamP->getKeyframeCount() - 1); 
   
   // loop through cells and set their id 
   for (int r = updateRange.first; r <= updateRange.second; r++) {
     double drawingNumberDouble = pegbar->getDrawingNumber(r);
-    int drawingNumber;
+    int drawingNumber = drawingNumberDouble;
     if (overrideOutside && (r < firstkeyframeindex || r > lastkeyframeindex)) {
-      setCell(r, col, zeroCell);
+      if (drawingNumber) {
+        setCell(r, col, zeroCell);
+      }
       continue;
     }
     if (behindCellDrawingNumber &&
@@ -681,6 +693,7 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
       ? pegbar->getDrawingNumber(updateRange.first-1) : -1; 
 
   for (int r = updateRange.first; r <= updateRange.second; r++) {
+    qDebug() << r << "lol";
     if (r < firstkeyframeindex || r > lastkeyframeindex) {
       if (overrideOutside) setCell(r, col, zeroCell);
       continue;

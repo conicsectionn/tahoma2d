@@ -1327,7 +1327,9 @@ bool TStageObject::isCycleEnabled() const { return m_cycleEnabled; }
 
 //-----------------------------------------------------------------------------
 
-void TStageObject::enableCycle(bool on) { m_cycleEnabled = on; }
+void TStageObject::enableCycle(bool on) { 
+  m_cycleEnabled = on; 
+}
 
 //-----------------------------------------------------------------------------
 
