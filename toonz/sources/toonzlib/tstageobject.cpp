@@ -455,10 +455,20 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
 
   if (id.isCamera()) m_camera = new TCamera();
 
+  m_drawingnumber->addObserver((TParamObserver*)(&m_drawingNumberObserver)); 
+  
   m_pinnedRangeSet = new TPinnedRangeSet();
 }
 
     //-----------------------------------------------------------------------------
+void TStageObject::DrawingNumberObserver::onChange(
+    const TParamChange &c) {
+  if (m_callback != nullptr) m_callback(c);
+};
+
+void TStageObject::setDrawingNumberCallback(DrawingNumberCallback callback) {
+  m_drawingNumberObserver.m_callback = callback;
+}
 
 TStageObject::~TStageObject() {
   if (m_spline) {
@@ -477,7 +487,12 @@ TStageObject::~TStageObject() {
   if (m_shearx) m_shearx->removeObserver(this);
   if (m_sheary) m_sheary->removeObserver(this);
   if (m_posPath) m_posPath->removeObserver(this);
-  if (m_drawingnumber) m_drawingnumber->removeObserver(this);
+  if (m_drawingnumber)
+  {
+    m_drawingnumber->removeObserver(this);
+    m_drawingnumber->removeObserver((TParamObserver *)(&
+                                    m_drawingNumberObserver));
+  }
 
   if (m_skeletonDeformation) {
     PlasticDeformerStorage::instance()->releaseDeformationData(
@@ -527,10 +542,6 @@ void TStageObject::onChange(const class TParamChange &c) {
     m_lazyData.invalidate();  // Both invalidate placement AND keyframes
   else
     invalidate();  // Invalidate placement only
-  TDoubleKeyframe::Type type =
-  m_drawingnumber->getKeyframeAt(c.m_minFrame).m_type;  
-
-  checkForDrawingNumberUpdate = true; 
 }
 
 //-----------------------------------------------------------------------------

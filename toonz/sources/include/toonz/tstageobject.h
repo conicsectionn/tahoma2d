@@ -95,6 +95,8 @@ responsibility of the
   TStageObjectTree class.
 */
 
+
+
 class DVAPI TStageObject final : public TSmartObject, public TParamObserver {
   DECLARE_CLASS_CODE
 
@@ -103,6 +105,18 @@ public:
 Used to describe the object status - ie how the object can move.
 The default value is XY.
 */
+  using DrawingNumberCallback = std::function<void(const TParamChange&)>;
+
+  class DrawingNumberObserver final : TParamObserver {
+
+    public:
+    DrawingNumberCallback m_callback;
+    DrawingNumberObserver() {}; 
+    void onChange(const TParamChange &c) override;
+  };
+  DrawingNumberObserver m_drawingNumberObserver; 
+  void setDrawingNumberCallback(DrawingNumberCallback callback);
+
   enum Status {
     XY,            //!< The object can move freely on a plane
     PATH     = 1,  //!< The movement take place on a spline
@@ -605,8 +619,6 @@ private:
 
   void onChange(const class TParamChange &c) override;
 
-public: 
-  int checkForDrawingNumberUpdate = false;
 };
 
 //-----------------------------------------------------------------------------

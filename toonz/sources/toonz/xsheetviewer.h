@@ -1429,8 +1429,6 @@ protected:
   void timerEvent(QTimerEvent *) override;
   bool event(QEvent *) override;
 
-  void paintEvent(QPaintEvent *event) override;
-
   void disconnectScrollBars();
   void connectScrollBars();
   void connectOrDisconnectScrollBars(bool toConnect);

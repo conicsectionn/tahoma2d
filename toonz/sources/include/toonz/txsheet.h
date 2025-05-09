@@ -14,6 +14,7 @@
 #include "toonz/txshcolumn.h"
 #include "toonz/txshlevel.h"
 #include "toonz/txsheetcolumnchange.h"
+#include "tparamchange.h"
 
 #include "cellposition.h"
 
@@ -276,10 +277,9 @@ public:
   */
   int getMaxFrame(int col) const;
 
-  void getUpdateRange(int col, int frame, QPair<int, int> *output,
-      int channel);
+  void getUpdateRange(int col, int frame, QPair<int, int> *output, int channel);
 
-  void updateNonZeroDrawingComplete (int frame, int currentCol = -1);
+  void updateNonZeroDrawingNumberCellsParam(int colNumber, const TParamChange &c);
 
   void updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter,
                                                   int dt);
@@ -493,6 +493,8 @@ frame duplication.
    */
   void insertColumn(int index,
                     TXshColumn::ColumnType type = TXshColumn::eLevelType);
+  void addDrawingNumberObserver(int col, TXshColumn *column);
+  void removeDrawingNumberObserver(int col, TXshColumn *column);
   /*! Insert \b \e column in column \b \e index. Insert column in the column
      set, in the
           pegbarTree \b TStageObjectTree contained in TXsheetImp and if column

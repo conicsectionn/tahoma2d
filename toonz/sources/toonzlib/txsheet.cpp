@@ -581,18 +581,11 @@ void TXsheet::getUpdateRange(
   }
 
 }
-void TXsheet::updateNonZeroDrawingComplete(int frame, int currentColumn) { 
-  for (int col = 0; col <= getColumnCount(); col++)
-  {
-    TXshColumn *column                  = getColumn(col);
-    if (column == nullptr || column->getColumnType() != TXshColumn::eLevelType) continue; 
-    TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
-    if (pegbar == nullptr) continue; 
-    if (!pegbar->checkForDrawingNumberUpdate) continue; 
-    pegbar->checkForDrawingNumberUpdate = false; 
-    updateNonZeroDrawingNumberCells(col, frame); 
-  }
+void TXsheet::updateNonZeroDrawingNumberCellsParam(int col,
+                                              const TParamChange &c) {
+  updateNonZeroDrawingNumberCells(col, c.m_firstAffectedFrame,c.m_lastAffectedFrame); 
 }
+
 void TXsheet::updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter, int dt) {
   TStageObject *pegbar = getStageObject(TStageObjectId::ColumnId(col));
   if (pegbar == nullptr) return;
@@ -613,9 +606,11 @@ void TXsheet::updateNonZeroDrawingNumberCellsAfterMoving(int col, int frameAfter
   //updateNonZeroDrawingNumberCells(col, frameAfter - dt);
 }
 void TXsheet::updateNonZeroDrawingNumberCellsBox(int r0, int c0, int r1, int c1) {
+  
   for (int c = c0; c <= c1; c++) {
     updateNonZeroDrawingNumberCells(c, r0, r1); 
   }
+  
 }
 
 
@@ -623,11 +618,9 @@ void TXsheet::updateNonZeroDrawingNumberCells(int col, int frame,
                                               int frameEnd, int keyframeStart,
                                               int keyframeEnd) {
   // check whether column and stage object are valid
-
   int overrideOutside  = true; 
   TStageObject *pegbar        = getStageObject(TStageObjectId::ColumnId(col)); 
   if (pegbar == nullptr) return; 
-  pegbar->checkForDrawingNumberUpdate = false; 
   TDoubleParamP drawingNumberParamP = pegbar->getDrawingNumberParamP();
   TXshColumn* column = getColumn(col); 
   qDebug() << frame << "\n"; 
@@ -1480,6 +1473,7 @@ void TXsheet::loadData(TIStream &is) {
         if (!column) throw TException("expected xsheet column");
         m_imp->m_columnSet.insertColumn(col++, column);
         column->setXsheet(this);
+        addDrawingNumberObserver(col, column); 
         if (TXshZeraryFxColumn *zc =
                 dynamic_cast<TXshZeraryFxColumn *>(column)) {
           TFx *fx         = zc->getZeraryColumnFx()->getZeraryFx();
@@ -1631,7 +1625,20 @@ void TXsheet::insertColumn(int col, TXshColumn::ColumnType type) {
   insertColumn(col, TXshColumn::createEmpty(type));
 }
 
-//-----------------------------------------------------------------------------
+void TXsheet::addDrawingNumberObserver(int col, TXshColumn *column) {
+  if (column->getColumnType() != TXshColumn::ColumnType::eLevelType) return; 
+  TStageObject *pegbar =
+      getStageObjectTree()->getStageObject(TStageObjectId::ColumnId(col));
+
+  pegbar->setDrawingNumberCallback(
+      std::bind(&TXsheet::updateNonZeroDrawingNumberCellsParam,
+                this, col,
+                std::placeholders::_1)
+  );
+}
+
+//class TXsheet::addDrawingNumberObserver : 
+      //-----------------------------------------------------------------------------
 
 void TXsheet::insertColumn(int col, TXshColumn *column) {
   if (col < 0) col = 0;
@@ -1642,6 +1649,8 @@ void TXsheet::insertColumn(int col, TXshColumn *column) {
   }
   m_imp->m_columnSet.insertColumn(col, column);
   m_imp->m_pegTree->insertColumn(col);
+  addDrawingNumberObserver(col, column); 
+  
   if (column->getPaletteColumn() ==
       0)  // palette column are not connected to the xsheet fx node
   {

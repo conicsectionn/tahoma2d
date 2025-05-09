@@ -610,6 +610,7 @@ class DragZTool : public DragChannelTool {
   TTool::Viewer *m_viewer;
   double m_dz;
   double m_dx;
+  double i_x; 
 
 public:
   int currentDrawingNumber    = 0;
@@ -627,8 +628,18 @@ public:
     m_firstPos = pos;
     m_dz       = 0;
     m_dx       = 0; 
-    currentDrawingNumber = getOldValue(1); 
+    i_x                  = 0; 
+    //currentDrawingNumber = getOldValue(1); 
     start();
+  }
+  void updateDrawingNumber() { 
+    //currentDrawingNumber = getOldValue(1); 
+  }
+  void setCurrentDrawingNumber(double val) {
+    int dn = std::max(0, (int)std::round(val));
+    setValues(getOldValue(0) + m_dx, dn);
+    currentDrawingNumber = dn; 
+    i_x                  = dn; 
   }
   void shiftToggle() { 
     affectingDrawingNumber = !affectingDrawingNumber;
@@ -648,7 +659,7 @@ public:
     } else if (!affectingDrawingNumber && dz != 0.0) {
       m_dz += dz;
     }
-    int dn = std::max(0, (int) std::round(getOldValue(1) + m_dx));
+    int dn = std::max(0, (int)std::round(i_x + getOldValue(1) + m_dx));
     setValues(getOldValue(0) + m_dz, dn);
 
     currentDrawingNumber = dn; 
@@ -845,7 +856,13 @@ const TStroke *EditTool::getSpline() const {
 //-----------------------------------------------------------------------------
 
 void EditTool::mouseMove(const TPointD &, const TMouseEvent &e) {
-
+  DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool);
+  if (ztool != nullptr) {
+    if (m_isShiftJustPressed) ztool->shiftToggle();
+    currentDrawingNumberDisplay = ztool->currentDrawingNumber;
+  } 
+  
+  
   /*-- return while left dragging --*/
   if (e.isLeftButtonPressed()) return;
 
@@ -878,7 +895,7 @@ void EditTool::mouseMove(const TPointD &, const TMouseEvent &e) {
   m_isAltPressed   = e.isAltPressed();
   m_isShiftPressed = e.isShiftPressed();
 
-  DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool);
+  //DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool);
   if (m_isShiftJustPressed)
     m_isShiftJustPressed = false;
   else if (m_isShiftPressed)
@@ -975,6 +992,23 @@ void EditTool::leftButtonDown(const TPointD &ppos, const TMouseEvent &e) {
       if (isDisplayingDrawingNumber) {
         ztool->shiftToggle(); 
       }
+      int currentCol =
+          TTool::getApplication()->getCurrentColumn()->getColumnIndex();
+      int currentFrame = TTool::getApplication()->getCurrentFrame()->getFrame();
+      TXshCell cell =
+          TTool::getApplication()->getCurrentXsheet()->getXsheet()->getCell(
+              currentFrame, currentCol);
+
+      int cellNum = cell.getFrameId().getNumber(); 
+      if (cellNum == -1) cellNum = 0; 
+      TStageObject* pegbar = TTool::getApplication()
+          ->getCurrentXsheet()
+          ->getXsheet()
+          ->getStageObjectTree()
+          ->getStageObject(currentCol);
+      //if (pegbar && pegbar->getDrawingNumber(currentFrame) == 0) cellNum = 0; 
+      ztool->setCurrentDrawingNumber(cellNum); 
+      currentDrawingNumberDisplay = ztool->currentDrawingNumber;
       break;
     }
   }
@@ -1042,11 +1076,7 @@ void EditTool::onEditAllLeftButtonDown(TPointD &pos, const TMouseEvent &e) {
 void EditTool::leftButtonDrag(const TPointD &pos, const TMouseEvent &e) {
   if (!m_dragTool) return;
   m_dragTool->leftButtonDrag(pos, e);
-  DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool); 
-  if (ztool != nullptr) {
-    if (m_isShiftJustPressed) 
-      ztool->shiftToggle(); 
-  }
+
   TTool::getApplication()->getCurrentObject()->notifyObjectIdChanged(true);
   invalidate();
 }
@@ -1492,6 +1522,26 @@ void EditTool::draw() {
     glScaled(unit * 8, unit * 8, 1);
 
     DragZTool *ztool = dynamic_cast<DragZTool *>(m_dragTool); 
+    if (!ztool) {
+      int currentCol =
+          TTool::getApplication()->getCurrentColumn()->getColumnIndex();
+      int currentFrame = TTool::getApplication()->getCurrentFrame()->getFrame();
+      TXshCell cell =
+          TTool::getApplication()->getCurrentXsheet()->getXsheet()->getCell(
+              currentFrame, currentCol);
+
+      int cellNum          = cell.getFrameId().getNumber();
+      if (cellNum == -1) cellNum = 0; 
+      TStageObject *pegbar = TTool::getApplication()
+                                 ->getCurrentXsheet()
+                                 ->getXsheet()
+                                 ->getStageObjectTree()
+                                 ->getStageObject(TStageObjectId::ColumnId(currentCol));
+      if (pegbar && pegbar->getDrawingNumber(currentFrame) == 0) cellNum = 0; 
+      //if (pegbar) cellNum = pegbar->getParam(TStageObject::T_DrawingNumber)->getValue(currentFrame);
+      currentDrawingNumberDisplay = cellNum;
+    }
+
     if (ztool && ztool->affectingDrawingNumber) {
       currentDrawingNumberDisplay = ztool->currentDrawingNumber;
     }
@@ -1506,7 +1556,8 @@ void EditTool::draw() {
       double unit = 0.5;  // or something like viewer->getPixelSize()
       TPointD pos(0, unit * 20);  // Position in world coordinates
      
-      std::string label = "DN: " + std::to_string(currentDrawingNumberDisplay);
+      std::string label;
+      label = "ID: " + std::to_string(currentDrawingNumberDisplay);
 
       drawText(pos, unit, label);
       glPopMatrix(); 
