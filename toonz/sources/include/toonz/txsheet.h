@@ -493,6 +493,7 @@ frame duplication.
    */
   void insertColumn(int index,
                     TXshColumn::ColumnType type = TXshColumn::eLevelType);
+  void addDrawingNumberObserversAll();
   void addDrawingNumberObserver(int col, TXshColumn *column);
   void removeDrawingNumberObserver(int col, TXshColumn *column);
   /*! Insert \b \e column in column \b \e index. Insert column in the column

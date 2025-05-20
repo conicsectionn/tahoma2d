@@ -1637,8 +1637,13 @@ PERSIST_IDENTIFIER(TXsheet, "xsheet")
 void TXsheet::insertColumn(int col, TXshColumn::ColumnType type) {
   insertColumn(col, TXshColumn::createEmpty(type));
 }
-
-void TXsheet::addDrawingNumberObserver(int col, TXshColumn *column) {
+void TXsheet ::addDrawingNumberObserversAll() {
+  for (int c = 0; c < getColumnCount(); c++) {
+    TXshColumn *column = getColumn(c);
+    addDrawingNumberObserver(c, column);
+  }
+}
+  void TXsheet::addDrawingNumberObserver(int col, TXshColumn *column) {
   if (column->getColumnType() != TXshColumn::ColumnType::eLevelType) return; 
   TStageObject *pegbar =
       getStageObjectTree()->getStageObject(TStageObjectId::ColumnId(col));

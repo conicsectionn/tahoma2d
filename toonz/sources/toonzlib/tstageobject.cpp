@@ -463,7 +463,9 @@ TStageObject::TStageObject(TStageObjectTree *tree, TStageObjectId id)
     //-----------------------------------------------------------------------------
 void TStageObject::DrawingNumberObserver::onChange(
     const TParamChange &c) {
-  if (m_callback != nullptr) m_callback(c);
+  if (m_callback != nullptr) {
+    m_callback(c);
+  }
 };
 
 void TStageObject::setDrawingNumberCallback(DrawingNumberCallback callback) {

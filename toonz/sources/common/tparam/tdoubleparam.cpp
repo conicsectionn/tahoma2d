@@ -20,8 +20,6 @@
 
 #include "tdoubleparam.h"
 
-#include "QDebug"; 
-
 using namespace std;
 
 //===============================
